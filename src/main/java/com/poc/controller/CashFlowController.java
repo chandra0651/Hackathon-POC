@@ -9,20 +9,18 @@ import javax.validation.Valid;
 import com.poc.entity.finance.CashFlow;
 import com.poc.service.IAssetService;
 import com.poc.service.ICashFlowService;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.elasticsearch.common.Preconditions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
 
+@RestController
+@RequestMapping(value = "api/v1/cashflow")
+@Api(value = "Cash Flow", description = "The Cash Flow API")
 public class CashFlowController {
 
 
