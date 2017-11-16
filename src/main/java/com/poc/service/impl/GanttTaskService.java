@@ -70,6 +70,28 @@ public class GanttTaskService implements IGanttTaskService{
     }
 
     @Override
+    public GanttTask create(String id, GanttTask newTask) {
+        GanttTask previousTask = findOne(id);
+        GanttTask nextTask = findOne(previousTask.getToDependency());
+        newTask.setId(UUID.randomUUID().toString());
+        
+        previousTask.setToDependency(newTask.getId());
+        newTask.setFromDependency(previousTask.getId());
+        newTask.setToDependency(nextTask.getId());
+        nextTask.setFromDependency(newTask.getId());
+        
+        GanttTask planning = repository.save(newTask);
+
+        Long daysGap = ChronoUnit.DAYS.between(nextTask.getStartDate(), nextTask.getEndDate());
+
+        nextTask.setStartDate(newTask.getEndDate());
+        nextTask.setEndDate(nextTask.getStartDate().plusDays(daysGap));
+        update(nextTask.getId(), nextTask);
+        
+        return planning;
+    }
+
+    @Override
     public Page<GanttTask> findAll() {
         return repository.findAll(constructPageRequest(0, 50, "name", "ASC"));
     }

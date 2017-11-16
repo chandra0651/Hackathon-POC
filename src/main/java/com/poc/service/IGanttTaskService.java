@@ -11,6 +11,8 @@ public interface IGanttTaskService {
 
     GanttTask create(GanttTask resource);
 
+    GanttTask create(String id, GanttTask resource);
+
     Page<GanttTask> findAll();
 
     void delete(String id);

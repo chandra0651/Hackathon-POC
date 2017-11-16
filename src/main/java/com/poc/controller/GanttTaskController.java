@@ -1,16 +1,16 @@
 package com.poc.controller;
 
+import com.poc.entity.GanttTask;
+import com.poc.service.IGanttTaskService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import com.poc.entity.GanttTask;
-import com.poc.service.IGanttTaskService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
 import org.elasticsearch.common.Preconditions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -58,6 +58,20 @@ public class GanttTaskController {
         return equipment;
     }
 
+    @RequestMapping(method = RequestMethod.POST)
+    @ResponseStatus(HttpStatus.CREATED)
+    @ApiOperation(value = "Create Task Between existing tasks", notes = "Create a new Task")
+    public GanttTask create(@Valid @RequestBody @ApiParam(value = "The Resource ID of existing task") final String existingTaskId,
+            @Valid @RequestBody @ApiParam(value = "The Resource to be Created") final GanttTask resource) {
+
+        Preconditions.checkNotNull(resource, "Resource provided is null");
+        Preconditions.checkNotNull(existingTaskId, "Id provided is null");
+        Optional<String> id = Optional.ofNullable(resource.getId());
+        Preconditions.checkArgument(id.isPresent() == false, "Resource should have no id.");
+        GanttTask equipment = service.create(existingTaskId, resource);
+        return equipment;
+    }
+
     @RequestMapping(params = {}, method = RequestMethod.GET)
     @ApiOperation(value = "Find All", nickname = "findAll", notes = "Find All (max 50 results). " + "<br>This endpoint supports generic filtering. Examples: " + "<br><ul>"
             + "<li> match one field: `?field=value`" + "<li> match multiple fields: `?field1=value1&field2=value2`" + "<li> multiple values for field: `?field=value1&field=value2`" + "</ul>")
@@ -77,9 +91,9 @@ public class GanttTaskController {
             + "<li> match one field: `?field=value`" + "<li> match multiple fields: `?field1=value1&field2=value2`" + "<li> multiple values for field: `?field=value1&field=value2`"
             + "<li> date time range filters: `?dateTimeFilter=field,fromDate,toDate`" + "</ul>")
     public Page<GanttTask> findAllPaginatedAndSorted(@RequestParam("page") final int page,
-                                                    @RequestParam("size") final int size,
-                                                    @RequestParam("sortBy") final String sortBy,
-                                                    @RequestParam("sortOrder") final String sortOrder) {
+            @RequestParam("size") final int size,
+            @RequestParam("sortBy") final String sortBy,
+            @RequestParam("sortOrder") final String sortOrder) {
         return service.findAllPaginatedAndSorted(page, size, sortBy, sortOrder);
     }
 
@@ -87,9 +101,9 @@ public class GanttTaskController {
     @ApiOperation(value = "search", nickname = "search", notes = "This endpoint supports generic filtering. Examples: " + "<br><ul>" + "<li> match one field: `?field=value`"
             + "<li> match multiple fields: `?field1=value1&field2=value2`" + "<li> multiple values for field: `?field=value1&field=value2`" + "</ul>")
     public Page<GanttTask> search(@RequestParam("page") final int page,
-                                 @RequestParam("size") final int size,
-                                 @RequestParam("sortBy") final String sortBy,
-                                 @RequestParam("sortOrder") final String sortOrder) {
+            @RequestParam("size") final int size,
+            @RequestParam("sortBy") final String sortBy,
+            @RequestParam("sortOrder") final String sortOrder) {
         Map<String, String[]> filters = new HashMap<>(request.getParameterMap());
         return service.search(page, size, sortBy, sortOrder, filters);
     }
@@ -98,7 +112,7 @@ public class GanttTaskController {
     @ResponseStatus(HttpStatus.OK)
     @ApiOperation(value = "Update Resource", notes = "Update the existing Resource")
     public List<GanttTask> update(@PathVariable("id") @ApiParam(value = "The Id of the Existing Resource to be Updated") final String id,
-                       @Valid @RequestBody @ApiParam(value = "The Resource to be Updated") final GanttTask resource) {
+            @Valid @RequestBody @ApiParam(value = "The Resource to be Updated") final GanttTask resource) {
         Preconditions.checkNotNull(resource, "Resource provided is null");
         Optional<String> resourceId = Optional.ofNullable(resource.getId());
         Preconditions.checkArgument(resourceId.isPresent() == false, "Resource should have no id.");
