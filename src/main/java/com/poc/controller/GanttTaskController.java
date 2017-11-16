@@ -58,10 +58,10 @@ public class GanttTaskController {
         return equipment;
     }
 
-    @RequestMapping(method = RequestMethod.POST)
+    @RequestMapping(value = "/createNew/{existingTaskId}",method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.CREATED)
     @ApiOperation(value = "Create Task Between existing tasks", notes = "Create a new Task")
-    public GanttTask create(@Valid @RequestBody @ApiParam(value = "The Resource ID of existing task") final String existingTaskId,
+    public GanttTask create(@PathVariable("existingTaskId") @ApiParam(value = "The Id of the Resource to be Deleted") final String existingTaskId,
             @Valid @RequestBody @ApiParam(value = "The Resource to be Created") final GanttTask resource) {
 
         Preconditions.checkNotNull(resource, "Resource provided is null");
@@ -115,7 +115,6 @@ public class GanttTaskController {
             @Valid @RequestBody @ApiParam(value = "The Resource to be Updated") final GanttTask resource) {
         Preconditions.checkNotNull(resource, "Resource provided is null");
         Optional<String> resourceId = Optional.ofNullable(resource.getId());
-        Preconditions.checkArgument(resourceId.isPresent() == false, "Resource should have no id.");
         return service.update(id, resource);
     }
 

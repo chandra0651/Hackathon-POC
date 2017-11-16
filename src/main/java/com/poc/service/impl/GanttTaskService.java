@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -82,18 +83,22 @@ public class GanttTaskService implements IGanttTaskService{
         
         previousTask.setToDependency(newTask.getId());
         newTask.setFromDependency(previousTask.getId());
-        newTask.setToDependency(nextTask.getId());
-        nextTask.setFromDependency(newTask.getId());
-        
-        GanttTask planning = repository.save(newTask);
+        if(nextTask != null) {
+            newTask.setToDependency(nextTask.getId());
+            nextTask.setFromDependency(newTask.getId());
+        }
+        GanttTask createdNewTask = repository.save(newTask);
+        repository.save(previousTask);
+        repository.save(nextTask);
 
-        int daysGap = getDaysGap(nextTask.getStartDate(), nextTask.getEndDate());
+        if(nextTask != null) {
+            int daysGap = getDaysGap(nextTask.getStartDate(), nextTask.getEndDate());
+            nextTask.setStartDate(newTask.getEndDate());
+            nextTask.setEndDate(addDaysToDate(daysGap, nextTask.getStartDate()));
+            update(nextTask.getId(), nextTask);
+        }
 
-        nextTask.setStartDate(newTask.getEndDate());
-        nextTask.setEndDate(addDaysToDate(daysGap, nextTask.getStartDate()));
-        update(nextTask.getId(), nextTask);
-        
-        return planning;
+        return createdNewTask;
     }
 
     @Override
@@ -106,15 +111,17 @@ public class GanttTaskService implements IGanttTaskService{
         GanttTask ganttTask = findOne(id);
         GanttTask fromGanttTask = findOne(ganttTask.getFromDependency());
         fromGanttTask.setToDependency(ganttTask.getToDependency());
-        GanttTask toGanttTask = findOne(ganttTask.getToDependency());
-        toGanttTask.setFromDependency(ganttTask.getFromDependency());
-        int daysGap = getDaysGap(toGanttTask.getStartDate(), toGanttTask.getEndDate());
-        toGanttTask.setStartDate(fromGanttTask.getEndDate());
-        toGanttTask.setEndDate(addDaysToDate(daysGap, fromGanttTask.getEndDate()));
+        repository.save(fromGanttTask);
+        if(ganttTask.getToDependency() != null) {
+            GanttTask toGanttTask = findOne(ganttTask.getToDependency());
+            toGanttTask.setFromDependency(ganttTask.getFromDependency());
+            int daysGap = getDaysGap(toGanttTask.getStartDate(), toGanttTask.getEndDate());
+            toGanttTask.setStartDate(fromGanttTask.getEndDate());
+            toGanttTask.setEndDate(addDaysToDate(daysGap, fromGanttTask.getEndDate()));
+            update(toGanttTask.getId(), toGanttTask);
+        }
 
-        update(fromGanttTask.getId(),fromGanttTask);
-         repository.save(toGanttTask);
-         repository.delete(id);
+        repository.delete(id);
     }
 
     @Override
@@ -131,20 +138,23 @@ public class GanttTaskService implements IGanttTaskService{
     @Override
     public List<GanttTask> update(String id, GanttTask resource) {
         GanttTask ganttTask = findOne(id);
-        do{
-          GanttTask toganttTask = findOne(ganttTask.getToDependency());
+        while (org.apache.commons.lang.StringUtils.isNotBlank(ganttTask.getToDependency())) {
+            GanttTask toganttTask = findOne(ganttTask.getToDependency());
             int daysGap = getDaysGap(toganttTask.getStartDate(), toganttTask.getEndDate());
             toganttTask.setStartDate(ganttTask.getEndDate());
             toganttTask.setEndDate(addDaysToDate(daysGap, ganttTask.getEndDate()));
             repository.save(toganttTask);
             ganttTask = toganttTask;
-        }while (ganttTask.getToDependency()== null);
+        }
         repository.save(resource);
         return findAll().getContent();
     }
 
     @Override
     public GanttTask findOne(String id) {
+        if(id == null) {
+            return null;
+        }
         return repository.findOne(id);
     }
 
