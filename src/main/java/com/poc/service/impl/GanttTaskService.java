@@ -1,17 +1,22 @@
 package com.poc.service.impl;
 
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import com.poc.entity.GanttTask;
 import com.poc.repository.IGanttTaskRepository;
 import com.poc.service.IGanttTaskService;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.joda.time.DateTime;
+import org.joda.time.Days;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -82,10 +87,10 @@ public class GanttTaskService implements IGanttTaskService{
         
         GanttTask planning = repository.save(newTask);
 
-        Long daysGap = ChronoUnit.DAYS.between(nextTask.getStartDate(), nextTask.getEndDate());
+        int daysGap = getDaysGap(nextTask.getStartDate(), nextTask.getEndDate());
 
         nextTask.setStartDate(newTask.getEndDate());
-        nextTask.setEndDate(nextTask.getStartDate().plusDays(daysGap));
+        nextTask.setEndDate(addDaysToDate(daysGap, nextTask.getStartDate()));
         update(nextTask.getId(), nextTask);
         
         return planning;
@@ -103,9 +108,9 @@ public class GanttTaskService implements IGanttTaskService{
         fromGanttTask.setToDependency(ganttTask.getToDependency());
         GanttTask toGanttTask = findOne(ganttTask.getToDependency());
         toGanttTask.setFromDependency(ganttTask.getFromDependency());
-        Long daysGap = ChronoUnit.DAYS.between(toGanttTask.getStartDate(), toGanttTask.getEndDate());
+        int daysGap = getDaysGap(toGanttTask.getStartDate(), toGanttTask.getEndDate());
         toGanttTask.setStartDate(fromGanttTask.getEndDate());
-        toGanttTask.setEndDate(fromGanttTask.getEndDate().plusDays(daysGap));
+        toGanttTask.setEndDate(addDaysToDate(daysGap, fromGanttTask.getEndDate()));
 
         update(fromGanttTask.getId(),fromGanttTask);
          repository.save(toGanttTask);
@@ -128,9 +133,9 @@ public class GanttTaskService implements IGanttTaskService{
         GanttTask ganttTask = findOne(id);
         do{
           GanttTask toganttTask = findOne(ganttTask.getToDependency());
-            Long daysGap = ChronoUnit.DAYS.between(toganttTask.getStartDate(), toganttTask.getEndDate());
+            int daysGap = getDaysGap(toganttTask.getStartDate(), toganttTask.getEndDate());
             toganttTask.setStartDate(ganttTask.getEndDate());
-            toganttTask.setEndDate(ganttTask.getEndDate().plusDays(daysGap));
+            toganttTask.setEndDate(addDaysToDate(daysGap, ganttTask.getEndDate()));
             repository.save(toganttTask);
             ganttTask = toganttTask;
         }while (ganttTask.getToDependency()== null);
@@ -154,5 +159,37 @@ public class GanttTaskService implements IGanttTaskService{
             qb.must(query);
         }
         return qb;
+    }
+    
+    public int getDaysGap(String date1, String date2) {
+        String pattern = "yyyy-MM-dd";
+        SimpleDateFormat format = new SimpleDateFormat(pattern);
+        int daysGap = 0;
+        try {
+            Date date11 = format.parse(date1);
+            Date date22 = format.parse(date2);
+            daysGap = Days.daysBetween(new DateTime(date11), new DateTime(date22)).getDays();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        
+        return daysGap;
+    }
+    
+    public String addDaysToDate(int days, String date) {
+        String pattern = "yyyy-MM-dd";
+        SimpleDateFormat format = new SimpleDateFormat(pattern);
+        String output = "";
+        try {
+            Date date1 = format.parse(date);
+            Calendar c = Calendar.getInstance();
+            c.setTime(date1);
+            c.add(Calendar.DATE, days); // Adding 5 days
+            output = format.format(c.getTime());
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        return output;
     }
 }

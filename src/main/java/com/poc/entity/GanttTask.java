@@ -1,7 +1,6 @@
 package com.poc.entity;
 
 
-import java.time.LocalDate;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.Document;
@@ -19,9 +18,9 @@ public class GanttTask {
 
     String fromDependency;
 
-    LocalDate startDate;
+    String startDate;
 
-    LocalDate endDate;
+    String endDate;
 
     int percentage;
 
